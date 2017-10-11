@@ -1,0 +1,29 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Transform: AWS::Serverless-2016-10-31
+
+Description: Setup shared Parameters 
+
+Parameters:
+
+  GitHubApiToken:
+    Type: String
+    NoEcho: true
+
+Resources:
+
+  GitHubApiTokenParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: shared/github/token
+      Type: String
+      Value: !Ref GitHubApiToken
+      Description: "GitHub Api Token with Admin access"
+
+Outputs:
+
+  GitHubApiToken:
+    Description: GitHub Api Token with Admin access
+    Value: !GetAtt GitHubApiTokenParameter.Value
+    Export:
+      Name: SharedGitHubApiToken

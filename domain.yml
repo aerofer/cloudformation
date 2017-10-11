@@ -1,0 +1,60 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Transform: AWS::Serverless-2016-10-31
+
+Description: Domain Bootstrap
+
+Parameters:
+
+  DomainName:
+    Type: String
+    Description: Domain to setup, such as example.com
+
+Resources:
+
+  Zone:
+    Type: AWS::Route53::HostedZone
+    Properties:
+      Name: !Ref DomainName
+      HostedZoneConfig:
+        Comment: !Sub "Primary domain for ${DomainName}"
+
+  ZoneTLDCertificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: !Ref DomainName
+
+  ZoneWildcardCertificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: !Sub "*.${DomainName}
+
+Outputs:
+
+  DomainName:
+    Description: Hosted Zone Name
+    Value: !Ref DomainName
+    Export:
+      Name: DomainName
+
+  DomainId:
+    Description: Hosted Zone Id
+    Value: !Ref Zone
+    Export:
+      Name: DomainId
+
+  DomainTLDCertificate:
+    Description: ACM Arn for TLD Certificate
+    Value: !Ref ZoneTLDCertificate
+    Export:
+      Name: DomainTLDCertificate
+
+  DomainWildcardCertificate:
+    Description: ACM Arn for TLD Certificate
+    Value: !Ref ZoneWildcardCertificate
+    Export:
+      Name: DomainWildcardCertificate
+
+  DomainNameServers:
+    Description: Hosted Zone Nameservers
+    Value: !Join [ ",", !GetAtt Zone.NameServers ]
