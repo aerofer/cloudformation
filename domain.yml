@@ -1,7 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
 
-Transform: AWS::Serverless-2016-10-31
-
 Description: Domain Bootstrap
 
 Parameters:
@@ -27,7 +25,7 @@ Resources:
   ZoneWildcardCertificate:
     Type: AWS::CertificateManager::Certificate
     Properties:
-      DomainName: !Sub "*.${DomainName}
+      DomainName: !Sub "*.${DomainName}"
 
 Outputs:
 
@@ -54,7 +52,3 @@ Outputs:
     Value: !Ref ZoneWildcardCertificate
     Export:
       Name: DomainWildcardCertificate
-
-  DomainNameServers:
-    Description: Hosted Zone Nameservers
-    Value: !Join [ ",", !GetAtt Zone.NameServers ]

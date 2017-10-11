@@ -1,0 +1,116 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Description: Authentication for domain
+
+Parameters:
+
+  ReplyToEmailAddress:
+    Type: String
+    Description: A verified SES Email Identity
+
+Resources:
+
+  IdentityPool:
+    Type: AWS::Cognito::IdentityPool
+    Properties:
+      AllowUnauthenticatedIdentities: true
+      CognitoIdentityProviders:
+        - ClientId: !Ref BrowserClient
+          ProviderName: !GetAtt UserPool.ProviderName
+
+  UserPool:
+    DependsOn:
+      - UserPoolSMSRole
+      - UserPoolSMSPolicy
+    Type: AWS::Cognito::UserPool
+    Properties:
+      AliasAttributes:
+        - phone_number
+        - email
+      DeviceConfiguration:
+        DeviceOnlyRememberedOnUserPrompt: true
+      EmailConfiguration:
+        ReplyToEmailAddress: !Ref ReplyToEmailAddress
+        SourceArn: !Sub "arn:${AWS::Partition}:ses:${AWS::Region}:${AWS::AccountId}:identity/${ReplyToEmailAddress}"
+      SmsConfiguration:
+        ExternalId:
+          Fn::Base64: !Ref AWS::StackId
+        SnsCallerArn: !GetAtt UserPoolSMSRole.Arn
+      Schema:
+        - Name: name
+          Required: true
+          Mutable: true
+        - Name: family_name
+          Required: true
+          Mutable: true
+
+  BrowserClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      RefreshTokenValidity: 30
+      UserPoolId: !Ref UserPool
+
+  UserPoolSMSRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Path: "/"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service: cognito-idp.amazonaws.com
+            Action: sts:AssumeRole
+
+  UserPoolSMSPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: UserPoolSMSPermissions
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - sns:Publish
+            Resource:
+              - "*"
+      Roles:
+        - Ref: UserPoolSMSRole
+
+Outputs:
+
+  IdentityPoolId:
+    Description: ID of the cognito identity pool
+    Value: !Ref IdentityPool
+    Export:
+      Name: AuthenticationIdentityPoolId
+
+  UserPoolProviderName:
+    Description: Provider name for user pool
+    Value: !GetAtt UserPool.ProviderName
+    Export:
+      Name: AuthenticationUserPoolProviderName
+
+  UserPoolProviderURL:
+    Description: Provider name for user pool
+    Value: !GetAtt UserPool.ProviderURL
+    Export:
+      Name: AuthenticationUserPoolProviderURL
+
+  UserPoolId:
+    Description: ID for the user pool
+    Value: !Ref UserPool
+    Export:
+      Name: AuthenticationUserPoolId
+
+  BrowserClient:
+    Description: ID for the web browser User Pool client
+    Value: !Ref BrowserClient
+    Export:
+      Name: AuthenticationBrowserClient
+
+  UserPoolArn:
+    Description: Arn for the user pool
+    Value: !GetAtt UserPool.Arn
+    Export:
+      Name: AuthenticationUserPoolArn
